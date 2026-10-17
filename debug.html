@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0a0907">
+  <meta name="description" content="一念 · 自动求佛。每日定时自动叩拜，功德可视化，并收录十二处免费在线礼佛、木鱼与求签道场。">
+  <title>一念 · 自动求佛</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%230a0907'/%3E%3Crect x='8' y='8' width='48' height='48' fill='none' stroke='%23c9a45c'/%3E%3Ctext x='32' y='44' font-size='32' text-anchor='middle' fill='%23e7d3a6' font-family='serif'%3E佛%3C/text%3E%3C/svg%3E">
+  <link rel="stylesheet" href="./styles.css">
+  <script>
+    window.__errs = [];
+    window.addEventListener('error', function (event) {
+      window.__errs.push(String(event.message || event.error));
+    });
+  </script>
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <div class="frame-line" aria-hidden="true"></div>
+  <canvas id="ambientCanvas" class="ambient-canvas" aria-hidden="true"></canvas>
+  <div class="ambient-orbs" aria-hidden="true">
+    <span class="orb orb-a"></span>
+    <span class="orb orb-b"></span>
+    <span class="orb orb-c"></span>
+  </div>
+
+  <header class="site-header" id="siteHeader">
+    <a class="brand" href="#pray" aria-label="一念自动求佛，回到首页">
+      <span class="brand-seal" aria-hidden="true">佛</span>
+      <span class="brand-text">
+        <b>一念</b>
+        <small>YI NIAN · 自动求佛</small>
+      </span>
+    </a>
+
+    <nav class="site-nav" aria-label="主导航">
+      <a href="#pray" class="is-active" data-nav="pray">求佛</a>
+      <a href="#temples" data-nav="temples">十方山门</a>
+      <a href="#records" data-nav="records">修行录</a>
+    </nav>
+
+    <div class="header-tools">
+      <button class="icon-btn" id="soundToggle" type="button" aria-pressed="true" title="开启或关闭木鱼声">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9.5v5h3.4L12 18V6L7.4 9.5H4Z" fill="currentColor"/>
+          <path class="sound-wave" d="M15.2 9.1a4.2 4.2 0 0 1 0 5.8M17.9 6.4a7.9 7.9 0 0 1 0 11.2" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          <path class="sound-slash" d="M15.2 9.2l5.2 5.6M20.4 9.2l-5.2 5.6" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+        <span id="soundLabel">声</span>
+      </button>
+      <button class="icon-btn icon-btn--wide" id="fullscreenToggle" type="button" title="切换全屏">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+        </svg>
+        <span>全屏</span>
+      </button>
+    </div>
+  </header>
+
+  <div class="side-verse side-verse--left" aria-hidden="true">一 念 一 叩 · 一 步 一 莲</div>
+  <div class="side-verse side-verse--right" aria-hidden="true">南 无 本 师 释 迦 牟 尼 佛</div>
+
+  <main>
+    <section class="hero" id="pray">
+      <div class="hero-inner">
+        <div class="hero-copy">
+          <p class="eyebrow reveal"><span class="eyebrow-line"></span>数字道场 · 甲辰年</p>
+          <h1 class="reveal">
+            <span class="h1-top">一 念 放 下</span>
+            <span class="h1-main">自动求佛<span class="h1-seal" aria-hidden="true">佛</span></span>
+          </h1>
+          <p class="hero-lede reveal">晨钟暮鼓，皆可定时。<br>让每一次叩拜，都被看见。</p>
+
+          <div class="hero-actions reveal">
+            <button class="btn btn--primary" id="prayNow" type="button">
+              <span class="btn-glyph" aria-hidden="true">叩</span>
+              <span class="btn-text">即刻求佛</span>
+              <span class="btn-meta">功德 +1</span>
+            </button>
+            <button class="btn btn--ghost" id="autoSession" type="button">
+              <span class="btn-text" id="autoSessionLabel">自动一炷香</span>
+              <span class="btn-meta" id="autoSessionMeta">18 拜</span>
+            </button>
+          </div>
+
+          <div class="hero-stats reveal">
+            <div class="stat">
+              <span>今日功德</span>
+              <strong id="todayCount">0</strong>
+            </div>
+            <div class="stat">
+              <span>累计功德</span>
+              <strong id="totalCount">0</strong>
+            </div>
+            <div class="stat">
+              <span>连续修行</span>
+              <strong><span id="streakDays">0</span><i>日</i></strong>
+            </div>
+          </div>
+
+          <p class="hero-note reveal"><span class="status-dot"></span>所有功德仅存于此设备 · 不上传云端</p>
+        </div>
+
+        <div class="altar reveal">
+          <div class="altar-frame">
+            <span class="corner corner--tl" aria-hidden="true"></span>
+            <span class="corner corner--tr" aria-hidden="true"></span>
+            <span class="corner corner--bl" aria-hidden="true"></span>
+            <span class="corner corner--br" aria-hidden="true"></span>
+
+            <div class="altar-head">
+              <span>释 迦 牟 尼 佛</span>
+              <span class="altar-head-line" aria-hidden="true"></span>
+              <span class="altar-head-en">SHĀKYAMUNI</span>
+            </div>
+
+            <div class="altar-stage" id="altarStage">
+              <div class="mandala" aria-hidden="true">
+                <i class="mandala-ring mandala-ring--a"></i>
+                <i class="mandala-ring mandala-ring--b"></i>
+                <i class="mandala-ring mandala-ring--c"></i>
+                <i class="mandala-mark">莲</i>
+              </div>
+              <div class="buddha-aura" aria-hidden="true"></div>
+              <div class="smoke smoke--a" aria-hidden="true"></div>
+              <div class="smoke smoke--b" aria-hidden="true"></div>
+              <div class="smoke smoke--c" aria-hidden="true"></div>
+
+              <svg class="buddha-svg" viewBox="0 0 440 600" role="img" aria-label="释迦牟尼佛结禅定印，结跏趺坐于莲台之上">
+                <defs>
+                  <linearGradient id="goldStroke" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#f8eccb"/>
+                    <stop offset=".42" stop-color="#d8b878"/>
+                    <stop offset="1" stop-color="#8b6b38"/>
+                  </linearGradient>
+                  <linearGradient id="robeFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#2b2216"/>
+                    <stop offset=".52" stop-color="#17130d"/>
+                    <stop offset="1" stop-color="#0c0a07"/>
+                  </linearGradient>
+                  <linearGradient id="lotusFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#3a2d1a"/>
+                    <stop offset="1" stop-color="#110e09"/>
+                  </linearGradient>
+                  <radialGradient id="faceLight" cx="50%" cy="44%" r="58%">
+                    <stop offset="0" stop-color="#f4dfae" stop-opacity=".2"/>
+                    <stop offset="1" stop-color="#c9a45c" stop-opacity="0"/>
+                  </radialGradient>
+                  <filter id="buddhaGlow" x="-30%" y="-30%" width="160%" height="160%">
+                    <feGaussianBlur stdDeviation="3.2" result="blur"/>
+                    <feMerge>
+                      <feMergeNode in="blur"/>
+                      <feMergeNode in="SourceGraphic"/>
+                    </feMerge>
+                  </filter>
+                </defs>
+
+                <g class="halo" fill="none">
+                  <circle cx="220" cy="226" r="181" stroke="url(#goldStroke)" stroke-opacity=".22" stroke-dasharray="1 10" stroke-linecap="round"/>
+                  <circle cx="220" cy="226" r="158" stroke="url(#goldStroke)" stroke-opacity=".16"/>
+                  <circle cx="220" cy="226" r="139" stroke="url(#goldStroke)" stroke-opacity=".09"/>
+                  <circle cx="220" cy="226" r="112" fill="url(#faceLight)" stroke="none"/>
+                </g>
+
+                <g class="lotus-base" fill="url(#lotusFill)" stroke="url(#goldStroke)" stroke-width="1.2" stroke-linejoin="round">
+                  <path d="M220 449c-18 22-25 46-19 66 4 14 15 22 25 20 13-3 20-17 17-33-3-19-11-38-23-53Z" fill-opacity=".92"/>
+                  <path d="M187 458c-27 13-42 34-39 53 2 13 12 21 24 19 16-3 27-21 29-43 1-14-3-24-14-29Z" fill-opacity=".82"/>
+                  <path d="M253 458c27 13 42 34 39 53-2 13-12 21-24 19-16-3-27-21-29-43-1-14 3-24 14-29Z" fill-opacity=".82"/>
+                  <path d="M155 474c-27 7-46 24-48 42-1 12 6 23 18 25 17 2 33-13 40-35 4-13 1-24-10-32Z" fill-opacity=".62"/>
+                  <path d="M285 474c27 7 46 24 48 42 1 12-6 23-18 25-17 2-33-13-40-35-4-13-1-24 10-32Z" fill-opacity=".62"/>
+                  <path d="M126 493c-23 2-40 14-44 30-3 12 3 22 14 26 15 4 31-6 40-25 6-13 4-25-10-31Z" fill-opacity=".38"/>
+                  <path d="M314 493c23 2 40 14 44 30 3 12-3 22-14 26-15 4-31-6-40-25-6-13-4-25 10-31Z" fill-opacity=".38"/>
+                  <path d="M138 520c26-3 57-3 82 0 25-3 56-3 82 0 14 2 22 9 22 16H116c0-7 8-14 22-16Z" fill-opacity=".85"/>
+                  <path d="M132 536h176" stroke-opacity=".5"/>
+                </g>
+
+                <g class="buddha-figure" filter="url(#buddhaGlow)">
+                  <path class="figure-body" d="M220 218c-28 0-46 24-52 54-28 10-52 36-64 78-12 44 2 88 44 112h144c42-24 56-68 44-112-12-42-36-68-64-78-6-30-24-54-52-54Z" fill="url(#robeFill)" stroke="url(#goldStroke)" stroke-width="1.35" stroke-linejoin="round"/>
+
+                  <path d="M202 211v28c0 9 8 14 18 14s18-5 18-14v-28" fill="url(#robeFill)" stroke="url(#goldStroke)" stroke-width="1.2"/>
+
+                  <ellipse cx="220" cy="170" rx="43" ry="51" fill="url(#robeFill)" stroke="url(#goldStroke)" stroke-width="1.35"/>
+                  <circle cx="220" cy="103" r="17" fill="url(#robeFill)" stroke="url(#goldStroke)" stroke-width="1.35"/>
+                  <path d="M177 159c-2-38 15-68 43-68s45 30 43 68c-13-15-25-23-43-23s-30 8-43 23Z" fill="#17130d" stroke="url(#goldStroke)" stroke-width="1.3" stroke-linejoin="round"/>
+                  <g fill="url(#goldStroke)" opacity=".9">
+                    <circle cx="194" cy="108" r="3.2"/>
+                    <circle cx="207" cy="98" r="3.2"/>
+                    <circle cx="220" cy="95" r="3.2"/>
+                    <circle cx="233" cy="98" r="3.2"/>
+                    <circle cx="246" cy="108" r="3.2"/>
+                  </g>
+
+                  <path d="M177 158c-12-7-20 4-17 22 3 17 12 24 20 18M263 158c12-7 20 4 17 22-3 17-12 24-20 18" fill="none" stroke="url(#goldStroke)" stroke-width="1.2" stroke-linecap="round"/>
+                  <circle cx="220" cy="149" r="3" fill="url(#goldStroke)"/>
+                  <path d="M197 169q8-5 16 0M227 169q8-5 16 0" fill="none" stroke="url(#goldStroke)" stroke-width="1.5" stroke-linecap="round"/>
+                  <path d="M220 172v15q0 4 5 4" fill="none" stroke="url(#goldStroke)" stroke-width="1.1" stroke-linecap="round" opacity=".85"/>
+                  <path d="M210 199q10 6 20 0" fill="none" stroke="url(#goldStroke)" stroke-width="1.35" stroke-linecap="round" opacity=".9"/>
+
+                  <path d="M178 265q42 36 84 0M189 277q31 34 62 0" fill="none" stroke="url(#goldStroke)" stroke-width="1" stroke-linecap="round" opacity=".55"/>
+                  <g class="heart-lotus" fill="none" stroke="url(#goldStroke)" stroke-width=".8" opacity=".52">
+                    <circle cx="220" cy="304" r="11" stroke-opacity=".5"/>
+                    <path d="M220 294c-4 5-4 10 0 14 4-4 4-9 0-14Z" fill="url(#goldStroke)" fill-opacity=".16"/>
+                    <path d="M211 299c5 1 8 5 9 10-5-1-8-5-9-10Z" fill="url(#goldStroke)" fill-opacity=".1"/>
+                    <path d="M229 299c-5 1-8 5-9 10 5-1 8-5 9-10Z" fill="url(#goldStroke)" fill-opacity=".1"/>
+                    <path d="M220 307v7" stroke-linecap="round"/>
+                  </g>
+                  <path d="M108 356q50 38 112 20 62 18 112-20" fill="none" stroke="url(#goldStroke)" stroke-width="1" opacity=".4"/>
+                  <path d="M124 385q45 24 96 10 51 14 96-10" fill="none" stroke="url(#goldStroke)" stroke-width=".9" opacity=".32"/>
+                  <path d="M137 414q40 16 83 6 43 10 83-6" fill="none" stroke="url(#goldStroke)" stroke-width=".8" opacity=".26"/>
+
+                  <path d="M160 394c10-11 26-15 40-10 6-7 34-7 40 0 14-5 30-1 40 10 7 8 6 20-3 26-11 8-34 12-57 12s-46-4-57-12c-9-6-10-18-3-26Z" fill="#17130d" stroke="url(#goldStroke)" stroke-width="1.3"/>
+                  <path d="M200 384c-6 8-8 20-2 30M240 384c6 8 8 20 2 30M186 410q34 11 68 0" fill="none" stroke="url(#goldStroke)" stroke-width="1" stroke-linecap="round" opacity=".8"/>
+                  <path d="M169 405q14-9 28-2M271 405q-14-9-28-2" fill="none" stroke="url(#goldStroke)" stroke-width=".9" stroke-linecap="round" opacity=".65"/>
+
+                  <path d="M143 268q-13 82 8 130M297 268q13 82-8 130" fill="none" stroke="url(#goldStroke)" stroke-width=".8" opacity=".25"/>
+                  <path d="M152 282q-2 64 13 112M288 282q2 64-13 112" fill="none" stroke="url(#goldStroke)" stroke-width=".6" opacity=".18"/>
+                </g>
+              </svg>
+
+              <div class="altar-wish" aria-hidden="true">
+                <span class="altar-wish-mark">愿</span>
+                <p id="altarWish">愿此间清净<br>众生安乐</p>
+              </div>
+
+              <canvas id="particleCanvas" class="particle-canvas" aria-hidden="true"></canvas>
+              <div class="float-layer" id="floatLayer" aria-hidden="true"></div>
+
+              <div class="altar-auto-tag" id="altarAutoTag" hidden><span></span>AUTO <b id="altarAutoCount">18</b></div>
+
+              <button class="pray-disc" id="prayDisc" type="button" aria-label="点击叩拜，功德加一" style="--progress:0">
+                <span class="disc-progress" aria-hidden="true"></span>
+                <span class="disc-ripple" aria-hidden="true"></span>
+                <span class="disc-ring" aria-hidden="true"></span>
+                <span class="disc-inner"><b>叩</b><small>叩 拜</small></span>
+              </button>
+            </div>
+
+            <div class="altar-foot">
+              <div class="incense-status">
+                <span class="flame" aria-hidden="true"></span>
+                <span id="ritualStatus" aria-live="polite">静候一念</span>
+              </div>
+              <div class="mini-progress" aria-hidden="true"><span id="miniProgressBar"></span></div>
+              <div class="mini-count"><b id="miniCount">0</b><span>/ 108</span></div>
+            </div>
+          </div>
+          <div class="altar-shadow" aria-hidden="true"></div>
+          <p class="altar-caption"><span>轻叩金环 · 或按空格 · 功德 +1</span></p>
+        </div>
+      </div>
+
+      <div class="hero-scroll" aria-hidden="true"><span></span>SCROLL TO TEN DIRECTIONS</div>
+    </section>
+
+    <section class="console" aria-label="求佛控制台">
+      <div class="console-grid">
+        <article class="panel panel--practice">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">TODAY'S PRACTICE</span>
+              <h2>今日功课</h2>
+            </div>
+            <span class="panel-date" id="todayDate">十月十七 · 星期六</span>
+          </div>
+          <div class="practice-body">
+            <div class="practice-ring">
+              <svg viewBox="0 0 120 120" aria-hidden="true">
+                <circle class="ring-bg" cx="60" cy="60" r="52"/>
+                <circle class="ring-fg" id="practiceRing" cx="60" cy="60" r="52"/>
+              </svg>
+              <div class="practice-ring-copy">
+                <strong id="practiceCount">0</strong>
+                <span>/ 108 拜</span>
+              </div>
+            </div>
+            <div class="practice-steps" id="practiceSteps" aria-label="求佛流程">
+              <div class="practice-step is-active" data-step="0">
+                <span class="step-dot">一</span>
+                <div><b>发心</b><small>愿有所向</small></div>
+              </div>
+              <div class="practice-step" data-step="1">
+                <span class="step-dot">二</span>
+                <div><b>叩首</b><small>一念恭敬</small></div>
+              </div>
+              <div class="practice-step" data-step="2">
+                <span class="step-dot">三</span>
+                <div><b>回向</b><small>功德共享</small></div>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="panel panel--auto" id="autoPanel">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">DAILY AUTOMATION</span>
+              <h2>每日自动</h2>
+            </div>
+            <label class="switch" for="autoToggle">
+              <input type="checkbox" id="autoToggle">
+              <span class="switch-track" aria-hidden="true"><i></i></span>
+              <span class="switch-label" id="autoToggleLabel">已关闭</span>
+            </label>
+          </div>
+          <form class="auto-form" id="autoForm">
+            <label class="field">
+              <span>定时时辰</span>
+              <input type="time" id="autoTime" value="08:00" step="60">
+            </label>
+            <label class="field">
+              <span>每次叩拜</span>
+              <select id="autoCount">
+                <option value="18">18 拜 · 一炷香</option>
+                <option value="36">36 拜 · 半日课</option>
+                <option value="108">108 拜 · 圆满</option>
+              </select>
+            </label>
+          </form>
+          <div class="auto-next" id="autoNext">
+            <span class="pulse-dot" aria-hidden="true"></span>
+            <span id="autoNextText">开启后，每日按时自动叩拜</span>
+          </div>
+          <div class="auto-foot">
+            <p>需保持页面打开并尽量留在前台；关闭页面后不会在后台执行。</p>
+            <button class="text-btn" id="makeUpBtn" type="button">补今日功课</button>
+          </div>
+        </article>
+
+        <article class="panel panel--wish">
+          <div class="panel-head">
+            <div>
+              <span class="panel-kicker">A WISH FOR TODAY</span>
+              <h2>今日祈愿</h2>
+            </div>
+            <span class="wish-mark" aria-hidden="true">愿</span>
+          </div>
+          <label class="sr-only" for="wishInput">写下今日祈愿</label>
+          <textarea id="wishInput" maxlength="60" placeholder="愿家人平安，心有所安……" spellcheck="false"></textarea>
+          <div class="wish-foot">
+            <span id="wishCount">0 / 60</span>
+            <button class="text-btn" id="saveWish" type="button">供于佛前 <span>↗</span></button>
+          </div>
+          <p class="wish-note">心愿只保存在本机浏览器。</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="temples" id="temples">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span class="eyebrow-line"></span>TEN DIRECTIONS · 十方</p>
+          <h2>十方山门</h2>
+          <p class="section-sub">十二处免费在线礼佛入口。山门不同，皆是发心。</p>
+        </div>
+        <div class="section-meta">
+          <span class="meta-badge">12 处道场</span>
+          <span class="meta-badge">人工核验 · 2026.10</span>
+        </div>
+      </div>
+
+      <div class="filter-bar" id="filterBar" role="tablist" aria-label="按类别筛选道场">
+        <button class="filter is-active" type="button" data-filter="all" role="tab" aria-selected="true">全部 <span>12</span></button>
+        <button class="filter" type="button" data-filter="shrine" role="tab" aria-selected="false">佛堂 <span>04</span></button>
+        <button class="filter" type="button" data-filter="zen" role="tab" aria-selected="false">静心 <span>01</span></button>
+        <button class="filter" type="button" data-filter="qian" role="tab" aria-selected="false">求签 <span>02</span></button>
+        <button class="filter" type="button" data-filter="muyu" role="tab" aria-selected="false">木鱼 <span>05</span></button>
+      </div>
+
+      <div class="temple-grid" id="templeGrid"></div>
+      <p class="directory-note">以上均为第三方站点，免费政策与可用性以原站为准。本站仅作收录，不参与其内容与运营。若一处山门暂闭，不妨换一处，心念不减。</p>
+    </section>
+
+    <section class="records" id="records">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow"><span class="eyebrow-line"></span>PRACTICE RECORD · 行迹</p>
+          <h2>修行录</h2>
+          <p class="section-sub">每一拜，都算数。所有记录只留在此设备。</p>
+        </div>
+        <div class="level-badge">
+          <span>当前阶位</span>
+          <strong id="levelName">初心</strong>
+        </div>
+      </div>
+
+      <div class="record-grid">
+        <article class="record-card chart-card">
+          <div class="card-head">
+            <h3>七日功德</h3>
+            <span id="weekTotal">0 拜</span>
+          </div>
+          <div class="chart" id="weekChart" aria-label="最近七日功德柱状图"></div>
+        </article>
+
+        <article class="record-card level-card">
+          <div class="card-head">
+            <h3>阶位进度</h3>
+            <span id="levelFraction">0 / 108</span>
+          </div>
+          <div class="level-orb" aria-hidden="true"><span id="levelOrbText">初</span></div>
+          <p class="level-copy" id="levelCopy">从第一念开始，静心叩拜。</p>
+          <div class="level-track" aria-hidden="true"><span id="levelBar"></span></div>
+          <div class="level-ticks" aria-hidden="true">
+            <span>初心</span><span>清净</span><span>精进</span><span>般若</span><span>菩提</span>
+          </div>
+        </article>
+
+        <article class="record-card log-card">
+          <div class="card-head">
+            <h3>今日行迹</h3>
+            <button class="text-btn" id="clearLog" type="button">清除</button>
+          </div>
+          <ul class="log-list" id="logList">
+            <li class="log-empty">尚无行迹，叩下第一拜。</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="footer-top">
+      <a class="brand brand--footer" href="#pray" aria-label="回到首页">
+        <span class="brand-seal" aria-hidden="true">佛</span>
+        <span class="brand-text">
+          <b>一念</b>
+          <small>YI NIAN · 自动求佛</small>
+        </span>
+      </a>
+      <p class="footer-verse">愿以此功德，庄严佛净土。<br>上报四重恩，下济三途苦。</p>
+    </div>
+    <div class="footer-bottom">
+      <p>本站为数字文化体验，非宗教服务机构。功德为本地虚拟数值，不具宗教或现实效力。</p>
+      <div class="footer-meta">
+        <span>© 2026 一念 · 自动求佛</span>
+        <span>DESIGNED IN SILENCE</span>
+      </div>
+    </div>
+  </footer>
+
+  <div class="session-bar" id="sessionBar" hidden>
+    <div class="session-info">
+      <span class="session-dot" aria-hidden="true"></span>
+      <div>
+        <b id="sessionTitle">自动叩拜中</b>
+        <span id="sessionProgress">0 / 18 拜</span>
+      </div>
+    </div>
+    <div class="session-line" aria-hidden="true"><span id="sessionBarFill"></span></div>
+    <button class="session-stop" id="stopSession" type="button">止静</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <noscript>
+    <div class="noscript">此道场需要 JavaScript 才能点香叩拜，请开启后重试。</div>
+  </noscript>
+  <script src="./app.js"></script>
+  <script>
+    setTimeout(function () {
+      var info = {
+        cards: document.querySelectorAll('.temple-card').length,
+        grid: !!document.getElementById('templeGrid'),
+        gridChildren: document.getElementById('templeGrid') ? document.getElementById('templeGrid').children.length : -1,
+        date: document.getElementById('todayDate') ? document.getElementById('todayDate').textContent : 'missing',
+        errors: window.__errs,
+        readyState: document.readyState,
+        script: !!document.querySelector('script[src="./app.js"]')
+      };
+      var pre = document.createElement('pre');
+      pre.id = 'debugout';
+      pre.style.cssText = 'position:fixed;left:0;top:0;z-index:99999;background:#fff;color:#000;font-size:18px;padding:20px;white-space:pre-wrap;max-width:100%;';
+      pre.textContent = JSON.stringify(info, null, 2);
+      document.body.appendChild(pre);
+    }, 2500);
+  </script>
+</body>
+</html>
