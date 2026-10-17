@@ -1,5 +1,8 @@
 # 一念 · 自动求佛
 
+> 在线访问：<https://orsonandrew.github.io/yinian-prayer/>  
+> GitHub 仓库：<https://github.com/OrsonAndrew/yinian-prayer>
+
 一个本地优先的禅意数字道场：点击金环叩拜、实时累积功德、可视化求佛过程，还可以设定每日定时自动叩拜。页面同时收录 12 处可访问的免费在线礼佛、木鱼与求签站点。
 
 ## 使用
